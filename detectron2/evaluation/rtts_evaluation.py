@@ -151,6 +151,9 @@ def parse_rec(filename):
 def rtts_ap(rec, prec, use_07_metric=False, debug=False):
     """Compute VOC AP given precision and recall.
     """
+    if debug:
+        print("rec: ", rec)
+        print("prec: ", prec)
     if use_07_metric:
         # 11 point metric
         ap = 0.0
@@ -176,6 +179,10 @@ def rtts_ap(rec, prec, use_07_metric=False, debug=False):
 
         # and sum (\Delta recall) * prec
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    
+    if debug:
+        print("ap: ", ap)
+        
     return ap
 
 
@@ -216,8 +223,11 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     class_recs = {}
     npos = 0
     for imagename in imagenames:
-        if debug: print(imagename)
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
+        if debug: 
+            print(imagename)
+            print(recs[imagename])
+            print(R)
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(bool)
         # difficult = np.array([False for x in R]).astype(bool)  # treat all "difficult" as GT
