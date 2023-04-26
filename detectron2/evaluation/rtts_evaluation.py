@@ -64,7 +64,7 @@ class RTTSEvaluator(DatasetEvaluator):
                     f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
                 )
 
-    def evaluate(self):
+    def evaluate(self, use_07_metric=False):
         """
         Returns:
             dict: has a key "segm", whose value is a dict of "AP", "AP50", and "AP75".
@@ -100,6 +100,7 @@ class RTTSEvaluator(DatasetEvaluator):
                         self._image_set_path,
                         cls_name,
                         ovthresh=thresh / 100.0,
+                        use_07_metric=use_07_metric,
                     )
                     aps[thresh].append(ap * 100)
 
@@ -146,28 +147,38 @@ def parse_rec(filename):
     return objects
 
 
-def rtts_ap(rec, prec):
+def rtts_ap(rec, prec, use_07_metric=False):
     """Compute VOC AP given precision and recall.
     """
-    # correct AP calculation
-    # first append sentinel values at the end
-    mrec = np.concatenate(([0.0], rec, [1.0]))
-    mpre = np.concatenate(([0.0], prec, [0.0]))
+    if use_07_metric:
+        # 11 point metric
+        ap = 0.0
+        for t in np.arange(0.0, 1.1, 0.1):
+            if np.sum(rec >= t) == 0:
+                p = 0
+            else:
+                p = np.max(prec[rec >= t])
+            ap = ap + p / 11.0
+    else:
+        # correct AP calculation
+        # first append sentinel values at the end
+        mrec = np.concatenate(([0.0], rec, [1.0]))
+        mpre = np.concatenate(([0.0], prec, [0.0]))
 
-    # compute the precision envelope
-    for i in range(mpre.size - 1, 0, -1):
-        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
 
-    # to calculate area under PR curve, look for points
-    # where X axis (recall) changes value
-    i = np.where(mrec[1:] != mrec[:-1])[0]
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
 
-    # and sum (\Delta recall) * prec
-    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        # and sum (\Delta recall) * prec
+        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
 
-def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5):
+def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
     """rec, prec, ap = rtts_eval(detpath,
                                 annopath,
                                 imagesetfile,
