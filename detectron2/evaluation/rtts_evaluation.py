@@ -287,6 +287,6 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-    ap = rtts_ap(rec, prec)
+    ap = rtts_ap(rec, prec, use_07_metric)
 
     return rec, prec, ap
