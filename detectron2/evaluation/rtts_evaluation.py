@@ -215,6 +215,7 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     class_recs = {}
     npos = 0
     for imagename in imagenames:
+        print("Processing:", imagename)
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(bool)
