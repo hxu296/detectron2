@@ -28,20 +28,23 @@ class RTTSEvaluator(DatasetEvaluator):
     official API.
     """
 
-    def __init__(self, dirname, class_names):
+    def __init__(self, dataset_name):
         """
         Args:
             dirname (str): the root of the RTTS dataset, containing "Annotations", "ImageSets", "JPEGImages".
             class_names (list[str] or tuple[str]): the class names to evaluate.
         """
+        self._dataset_name = dataset_name
+        meta = MetadataCatalog.get(dataset_name)
 
         # Too many tiny files, download all to local for speed.
         annotation_dir_local = PathManager.get_local_path(
-            os.path.join(dirname, "Annotations/")
+            os.path.join(meta.dirname, "Annotations/")
         )
+        self._is_2007 = meta.year == 2007
         self._anno_file_template = os.path.join(annotation_dir_local, "{}.xml")
-        self._image_set_path = os.path.join(dirname, "ImageSets", "Main", "test.txt")
-        self._class_names = class_names
+        self._image_set_path = os.path.join(meta.dirname, "ImageSets", "Main", "test.txt")
+        self._class_names = meta.thing_classes
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
 
@@ -64,7 +67,7 @@ class RTTSEvaluator(DatasetEvaluator):
                     f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
                 )
 
-    def evaluate(self, use_07_metric=False, debug=False):
+    def evaluate(self, debug=False):
         """
         Returns:
             dict: has a key "segm", whose value is a dict of "AP", "AP50", and "AP75".
@@ -100,7 +103,7 @@ class RTTSEvaluator(DatasetEvaluator):
                         self._image_set_path,
                         cls_name,
                         ovthresh=thresh / 100.0,
-                        use_07_metric=use_07_metric,
+                        use_07_metric=self._is_2007,
                         debug=debug,
                     )
                     aps[thresh].append(ap * 100)
@@ -151,9 +154,6 @@ def parse_rec(filename):
 def rtts_ap(rec, prec, use_07_metric=False, debug=False):
     """Compute VOC AP given precision and recall.
     """
-    if debug:
-        print("rec: ", rec)
-        print("prec: ", prec)
     if use_07_metric:
         # 11 point metric
         ap = 0.0
@@ -179,10 +179,7 @@ def rtts_ap(rec, prec, use_07_metric=False, debug=False):
 
         # and sum (\Delta recall) * prec
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    
-    if debug:
-        print("ap: ", ap)
-        
+
     return ap
 
 
@@ -224,16 +221,15 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     npos = 0
     for imagename in imagenames:
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
-        if debug: 
-            print(imagename)
-            print(recs[imagename])
-            print(R)
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(bool)
         # difficult = np.array([False for x in R]).astype(bool)  # treat all "difficult" as GT
         det = [False] * len(R)
         npos = npos + sum(~difficult)
         class_recs[imagename] = {"bbox": bbox, "difficult": difficult, "det": det}
+        if debug: 
+            print(imagename)
+            print(class_recs[imagename])
 
     # read dets
     detfile = detpath.format(classname)
@@ -300,5 +296,9 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = rtts_ap(rec, prec, use_07_metric, debug=debug)
+
+    print("rec: ", rec)
+    print("prec: ", prec)
+    print("ap: ", ap)
 
     return rec, prec, ap
