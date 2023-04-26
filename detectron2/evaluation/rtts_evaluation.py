@@ -146,7 +146,7 @@ def parse_rec(filename):
     return objects
 
 
-def voc_ap(rec, prec):
+def rtts_ap(rec, prec):
     """Compute VOC AP given precision and recall.
     """
     # correct AP calculation
