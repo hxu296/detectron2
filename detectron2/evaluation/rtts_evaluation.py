@@ -64,7 +64,7 @@ class RTTSEvaluator(DatasetEvaluator):
                     f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
                 )
 
-    def evaluate(self, use_07_metric=False):
+    def evaluate(self, use_07_metric=False, debug=False):
         """
         Returns:
             dict: has a key "segm", whose value is a dict of "AP", "AP50", and "AP75".
@@ -101,6 +101,7 @@ class RTTSEvaluator(DatasetEvaluator):
                         cls_name,
                         ovthresh=thresh / 100.0,
                         use_07_metric=use_07_metric,
+                        debug=debug,
                     )
                     aps[thresh].append(ap * 100)
 
@@ -147,7 +148,7 @@ def parse_rec(filename):
     return objects
 
 
-def rtts_ap(rec, prec, use_07_metric=False):
+def rtts_ap(rec, prec, use_07_metric=False, debug=False):
     """Compute VOC AP given precision and recall.
     """
     if use_07_metric:
@@ -178,7 +179,7 @@ def rtts_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
+def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False, debug=False):
     """rec, prec, ap = rtts_eval(detpath,
                                 annopath,
                                 imagesetfile,
@@ -215,7 +216,7 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     class_recs = {}
     npos = 0
     for imagename in imagenames:
-        print("Processing:", imagename)
+        if debug: print(imagename)
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(bool)
@@ -288,6 +289,6 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-    ap = rtts_ap(rec, prec, use_07_metric)
+    ap = rtts_ap(rec, prec, use_07_metric, debug=debug)
 
     return rec, prec, ap
