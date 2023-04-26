@@ -245,7 +245,6 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     sorted_ind = np.argsort(-confidence)
     BB = BB[sorted_ind, :]
     image_ids = [image_ids[x] for x in sorted_ind]
-    print(image_ids)
 
     # go down dets and mark TPs and FPs
     nd = len(image_ids)
