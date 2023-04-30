@@ -107,7 +107,8 @@ class RTTSEvaluator(DatasetEvaluator):
                         debug=debug,
                     )
                     aps[thresh].append(ap * 100)
-
+            self._aps = aps
+            
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
         ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
