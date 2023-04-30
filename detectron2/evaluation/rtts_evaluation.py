@@ -108,7 +108,7 @@ class RTTSEvaluator(DatasetEvaluator):
                     )
                     aps[thresh].append(ap * 100)
             self._aps = aps
-            
+
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
         ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
@@ -140,6 +140,9 @@ def parse_rec(filename):
         obj_struct["pose"] = obj.find("pose").text
         obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
+        # skip difficult objects as RESIDE did not use them for evaluation
+        if obj_struct["difficult"]:
+            continue
         bbox = obj.find("bndbox")
         obj_struct["bbox"] = [
             int(bbox.find("xmin").text),
