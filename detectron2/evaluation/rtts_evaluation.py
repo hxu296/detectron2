@@ -297,8 +297,4 @@ def rtts_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_m
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = rtts_ap(rec, prec, use_07_metric, debug=debug)
 
-    print("rec: ", rec)
-    print("prec: ", prec)
-    print("ap: ", ap)
-
     return rec, prec, ap
